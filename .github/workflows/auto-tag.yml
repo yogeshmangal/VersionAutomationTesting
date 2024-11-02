@@ -39,7 +39,19 @@ jobs:
           # Save the new version as an output variable without any extra spaces
           echo "::set-output name=version::$next_version"
 
+      - name: Check if tag exists
+        id: tag_exists
+        run: |
+          if git rev-parse "${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists."
+            echo "::set-output name=exists::true"
+          else
+            echo "Tag does not exist."
+            echo "::set-output name=exists::false"
+          fi
+
       - name: Create new tag
+        if: steps.tag_exists.outputs.exists == 'false'
         run: |
           git tag "${{ steps.get_version.outputs.version }}"
           git push origin "${{ steps.get_version.outputs.version }}"
