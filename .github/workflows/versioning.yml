@@ -1,0 +1,40 @@
+name: Auto Increment Version
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  increment_version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Read current version
+        id: get_version
+        run: |
+          version=$(cat version/version.txt)
+          echo "::set-output name=version::$version"
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          IFS='.' read -r major minor <<< "${{ steps.get_version.outputs.version }}"
+          minor=$((minor + 1))
+          new_version="$major.$minor"
+          echo "$new_version" > version/version.txt
+          echo "::set-output name=new_version::$new_version"
+
+      - name: Commit and push changes
+        run: |
+          git add version/version.txt
+          git commit -m "Increment version to ${{ steps.increment_version.outputs.new_version }}"
+          git push origin version
