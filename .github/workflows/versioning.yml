@@ -27,7 +27,7 @@ jobs:
 
       - name: Check if version file exists
         run: |
-          if [ ! -f version/version.txt ]; then
+          if [ ! -f version.txt ]; then
             echo "Version file does not exist!"
             exit 1
           fi
