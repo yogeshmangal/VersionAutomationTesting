@@ -10,13 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout main branch
         uses: actions/checkout@v2
+        with:
+          ref: main
 
       - name: Set up Git
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+      - name: Checkout version branch
+        run: |
+          git fetch origin version
+          git checkout version
+
+      - name: Check if version file exists
+        run: |
+          if [ ! -f version/version.txt ]; then
+            echo "Version file does not exist!"
+            exit 1
+          fi
 
       - name: Read current version
         id: get_version
@@ -33,7 +47,7 @@ jobs:
           echo "$new_version" > version/version.txt
           echo "::set-output name=new_version::$new_version"
 
-      - name: Commit and push changes
+      - name: Commit and push changes to version branch
         run: |
           git add version/version.txt
           git commit -m "Increment version to ${{ steps.increment_version.outputs.new_version }}"
