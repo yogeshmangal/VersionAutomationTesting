@@ -25,6 +25,10 @@ jobs:
           git fetch origin version
           git checkout version
 
+      - name: List files in version branch
+        run: |
+          ls -la
+
       - name: Check if version file exists
         run: |
           if [ ! -f version.txt ]; then
