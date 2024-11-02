@@ -1,50 +1,60 @@
-name: Auto Tag
+name: Auto Increment Version
 
 on:
   push:
     branches:
-      - main  # Runs the workflow on pushes to the main branch
+      - main
 
 jobs:
-  tag-version:
+  increment_version:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out the code
+      - name: Checkout main branch
         uses: actions/checkout@v2
+        with:
+          ref: main
 
       - name: Set up Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
 
-      - name: Get latest tag version
+      - name: Checkout version branch
+        run: |
+          git fetch origin version
+          git checkout version
+
+      - name: List files in version branch
+        run: |
+          ls -la
+
+      - name: Check if version file exists
+        run: |
+          if [ ! -f version.txt ]; then
+            echo "Version file does not exist!"
+            exit 1
+          fi
+
+      - name: Read current version
         id: get_version
         run: |
-          # Fetch the latest tag or default to v0.0 if none exists
-          latest=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
-          echo "Latest tag: $latest"
+          version=$(cat version.txt)
+          echo "::set-output name=version::$version"
 
-          # Increment the version number
-          base=${latest#v}   # Remove the 'v' prefix
-          major=$(echo $base | cut -d. -f1)
-          minor=$(echo $base | cut -d. -f2)
-
-          # Increment the minor version
-          next_minor=$((minor + 1))
-          next_version="v${major}.${next_minor}"
-
-          echo "New version: $next_version"
-
-          # Save the new version as an output variable
-          echo "new_version=$next_version" >> $GITHUB_ENV
-
-      - name: Create new tag if it doesn't exist
+      - name: Increment version
+        id: increment_version
         run: |
-          if git tag -l | grep -q "${{ env.new_version }}"; then
-            echo "Tag ${{ env.new_version }} already exists, skipping tag creation."
-          else
-            git tag "${{ env.new_version }}"
-            git push origin "${{ env.new_version }}"
-            echo "Tag ${{ env.new_version }} created and pushed."
-          fi
+          IFS='.' read -r major minor <<< "${{ steps.get_version.outputs.version }}"
+          minor=$((minor + 1))
+          new_version="$major.$minor"
+          echo "$new_version" > version.txt
+          echo "::set-output name=new_version::$new_version"
+
+      - name: Commit and push changes to version branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Using the provided GitHub token
+        run: |
+          git add version.txt
+          git commit -m "Increment version to ${{ steps.increment_version.outputs.new_version }}"
+          git push origin version
