@@ -3,7 +3,7 @@ name: Auto Tag
 on:
   push:
     branches:
-      - main  # Runs the workflow on pushes to the main branch
+      - main
 
 jobs:
   tag-version:
@@ -21,23 +21,24 @@ jobs:
       - name: Get latest tag version
         id: get_version
         run: |
-          # Fetch the latest tag or default to v0.0 if none exists
           latest=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
           echo "Latest tag: $latest"
 
           # Increment the version number
-          base=${latest#v}   # Remove the 'v' prefix
+          base=${latest#v}
           major=$(echo $base | cut -d. -f1)
           minor=$(echo $base | cut -d. -f2)
 
-          # Increment the minor version
           next_minor=$((minor + 1))
           next_version="v${major}.${next_minor}"
 
           echo "New version: $next_version"
-
-          # Save the new version as an output variable
           echo "new_version=$next_version" >> $GITHUB_ENV
+
+      - name: List existing tags
+        run: |
+          echo "Existing tags:"
+          git tag -l
 
       - name: Create new tag if it doesn't exist
         run: |
