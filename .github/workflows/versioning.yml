@@ -52,6 +52,8 @@ jobs:
           echo "::set-output name=new_version::$new_version"
 
       - name: Commit and push changes to version branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Using the provided GitHub token
         run: |
           git add version.txt
           git commit -m "Increment version to ${{ steps.increment_version.outputs.new_version }}"
