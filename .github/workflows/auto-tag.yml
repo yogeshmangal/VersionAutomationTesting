@@ -1,0 +1,39 @@
+name: Auto Tag
+
+on:
+  push:
+    branches:
+      - main  # This runs the workflow every time you push to the main branch
+
+jobs:
+  tag-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get latest tag version
+        id: get_version
+        run: |
+          # Get latest tag (default to 0.0 if no tags)
+          latest=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
+          echo "Latest tag: $latest"
+
+          # Increment the version (from v0.1 to v0.2, etc.)
+          base=${latest/v/}
+          next_version="v$(echo $base | awk -F. '{$NF+=1; OFS="."; print $0}')"
+          echo "New version: $next_version"
+
+          # Save the new version as output
+          echo "::set-output name=version::$next_version"
+
+      - name: Create new tag
+        run: |
+          git tag ${{ steps.get_version.outputs.version }}
+          git push origin ${{ steps.get_version.outputs.version }}
